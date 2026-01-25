@@ -1,0 +1,7 @@
+{
+  "name": "Alonso Financial Dashboard",
+  "description": "A high-performance personal finance dashboard focused on debt repayment (Scheu Dental and Interbank) with real-time tracking of cash flow and weekend spending caps.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
