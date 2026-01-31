@@ -29,7 +29,15 @@ import {
   addPaymentConcept,
   getBtcContributions,
   addBtcContribution,
-  addTransaction
+  addTransaction,
+  updateTransaction,
+  deleteTransaction,
+  addDebt,
+  updateDebt,
+  deleteDebt,
+  updateDashboardStats,
+  updateBudget,
+  deleteScheduledPayment
 } from './services/dataService';
 import { Transaction, TransactionCategory, Debt, CategoryBudget, ScheduledPayment, BtcContribution, DashboardStats } from './types';
 import { ICONS } from './constants';
@@ -194,25 +202,32 @@ const App: React.FC = () => {
     setIsEditBalanceModalOpen(true);
   };
 
-  const handleConfirmIncomeAdjustment = (newIncome: number, reason: string) => {
-    setStats(prev => {
-      const diff = newIncome - prev.monthlyIncome;
-      return {
-        ...prev,
-        monthlyIncome: newIncome,
-        availableCash: prev.availableCash + diff
-      };
+  const handleConfirmIncomeAdjustment = async (newIncome: number, reason: string) => {
+    const diff = newIncome - stats.monthlyIncome;
+    const updatedStats = await updateDashboardStats({
+      monthlyIncome: newIncome,
+      availableCash: stats.availableCash + diff
     });
-    // Todo: Persist this change to DB if needed
+
+    if (updatedStats) {
+      setStats(updatedStats);
+      setToast({ message: 'Ingreso del mes actualizado correctamente', type: 'success' });
+    } else {
+      setToast({ message: 'Error al actualizar ingreso', type: 'error' });
+    }
     setIsEditIncomeModalOpen(false);
-    setToast({ message: 'Ingreso del mes actualizado correctamente', type: 'success' });
   };
 
-  const handleConfirmWeekendCapAdjustment = (newCap: number, reason: string) => {
-    setStats(prev => ({ ...prev, weekendCap: newCap }));
-    // Todo: Persist change
+  const handleConfirmWeekendCapAdjustment = async (newCap: number, reason: string) => {
+    const updatedStats = await updateDashboardStats({ weekendCap: newCap });
+
+    if (updatedStats) {
+      setStats(updatedStats);
+      setToast({ message: 'Cap de fin de semana actualizado correctamente', type: 'success' });
+    } else {
+      setToast({ message: 'Error al actualizar cap', type: 'error' });
+    }
     setIsEditWeekendCapModalOpen(false);
-    setToast({ message: 'Cap de fin de semana actualizado correctamente', type: 'success' });
   };
 
   const handleApplySimulation = (debt: Debt, amount: number) => {
@@ -228,12 +243,17 @@ const App: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleConfirmBalanceAdjustment = (debtId: string, newBalance: number, reason: string) => {
-    setDebts(prev => prev.map(d => d.id === debtId ? { ...d, currentBalance: newBalance } : d));
-    // Todo: Persist change
+  const handleConfirmBalanceAdjustment = async (debtId: string, newBalance: number, reason: string) => {
+    const updated = await updateDebt(debtId, { currentBalance: newBalance });
+
+    if (updated) {
+      setDebts(prev => prev.map(d => d.id === debtId ? updated : d));
+      setToast({ message: 'Saldo de la deuda actualizado correctamente', type: 'success' });
+    } else {
+      setToast({ message: 'Error al actualizar saldo', type: 'error' });
+    }
     setIsEditBalanceModalOpen(false);
     setEditingDebt(null);
-    setToast({ message: 'Saldo de la deuda actualizado correctamente', type: 'success' });
   };
 
   const handleConfirmNewCategory = async (name: string) => {
@@ -329,11 +349,29 @@ const App: React.FC = () => {
 
   const handleSaveTransaction = async (data: any) => {
     if (editingTransaction && editingTransaction.id) {
-      // Handle Edit (Update not implemented in service yet, doing local optmistic or skipping)
-      // For now, let's assuming we just support adding or we need to add updateTransaction to service.
-      // Falling back to local update for UI (but won't persist without service update)
-      // Ideally we add updateTransaction to service.
-      setToast({ message: 'Edición no implementada en DB aún', type: 'error' });
+      // Handle Edit - Update in Supabase
+      const updateData: Partial<Transaction> = {
+        date: data.date || editingTransaction.date,
+        description: data.description,
+        amount: parseFloat(data.amount),
+        category: data.category as string,
+        isWeekend: !!data.isWeekend,
+      };
+
+      const updated = await updateTransaction(editingTransaction.id, updateData);
+
+      if (updated) {
+        setTransactions(prev => prev.map(tx => tx.id === updated.id ? updated : tx));
+        setToast({ message: 'Transacción actualizada con éxito', type: 'success' });
+
+        // Recalculate stats if needed
+        const allTxs = await getTransactions();
+        setTransactions(allTxs);
+        const freshStats = await getDashboardStats();
+        setStats(freshStats);
+      } else {
+        setToast({ message: 'Error al actualizar transacción', type: 'error' });
+      }
     } else {
       const newTxData = {
         date: data.date || new Date().toISOString().split('T')[0],

@@ -301,3 +301,206 @@ export const addTransaction = async (tx: Omit<Transaction, 'id' | 'status'>): Pr
     status: data.status
   };
 };
+
+// Update Transaction
+export const updateTransaction = async (id: string, patch: Partial<Transaction>): Promise<Transaction | null> => {
+  const dbPatch: any = {};
+  if (patch.date !== undefined) dbPatch.date = patch.date;
+  if (patch.description !== undefined) dbPatch.description = patch.description;
+  if (patch.amount !== undefined) dbPatch.amount = patch.amount;
+  if (patch.category !== undefined) dbPatch.category = patch.category;
+  if (patch.isWeekend !== undefined) dbPatch.is_weekend = patch.isWeekend;
+  if (patch.status !== undefined) dbPatch.status = patch.status;
+
+  const { data, error } = await supabase
+    .from('transactions')
+    .update(dbPatch)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error || !data) {
+    console.error('Error updating transaction:', error);
+    return null;
+  }
+  return {
+    id: data.id,
+    date: data.date,
+    description: data.description,
+    amount: Number(data.amount),
+    category: data.category,
+    isWeekend: data.is_weekend,
+    status: data.status
+  };
+};
+
+// Delete Transaction
+export const deleteTransaction = async (id: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('transactions')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting transaction:', error);
+    return false;
+  }
+  return true;
+};
+
+// Add Debt
+export const addDebt = async (debt: Omit<Debt, 'id'>): Promise<Debt | null> => {
+  const { data, error } = await supabase
+    .from('debts')
+    .insert([{
+      name: debt.name,
+      initial_balance: debt.initialBalance,
+      current_balance: debt.currentBalance,
+      monthly_minimum: debt.monthlyMinimum,
+      real_payment: debt.realPayment,
+      priority: debt.priority,
+      due_date: debt.dueDate
+    }])
+    .select()
+    .single();
+
+  if (error || !data) {
+    console.error('Error adding debt:', error);
+    return null;
+  }
+  return {
+    id: data.id,
+    name: data.name,
+    initialBalance: Number(data.initial_balance),
+    currentBalance: Number(data.current_balance),
+    monthlyMinimum: Number(data.monthly_minimum),
+    realPayment: Number(data.real_payment),
+    priority: data.priority,
+    dueDate: data.due_date
+  };
+};
+
+// Update Debt
+export const updateDebt = async (id: string, patch: Partial<Debt>): Promise<Debt | null> => {
+  const dbPatch: any = {};
+  if (patch.name !== undefined) dbPatch.name = patch.name;
+  if (patch.initialBalance !== undefined) dbPatch.initial_balance = patch.initialBalance;
+  if (patch.currentBalance !== undefined) dbPatch.current_balance = patch.currentBalance;
+  if (patch.monthlyMinimum !== undefined) dbPatch.monthly_minimum = patch.monthlyMinimum;
+  if (patch.realPayment !== undefined) dbPatch.real_payment = patch.realPayment;
+  if (patch.priority !== undefined) dbPatch.priority = patch.priority;
+  if (patch.dueDate !== undefined) dbPatch.due_date = patch.dueDate;
+
+  const { data, error } = await supabase
+    .from('debts')
+    .update(dbPatch)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error || !data) {
+    console.error('Error updating debt:', error);
+    return null;
+  }
+  return {
+    id: data.id,
+    name: data.name,
+    initialBalance: Number(data.initial_balance),
+    currentBalance: Number(data.current_balance),
+    monthlyMinimum: Number(data.monthly_minimum),
+    realPayment: Number(data.real_payment),
+    priority: data.priority,
+    dueDate: data.due_date
+  };
+};
+
+// Delete Debt
+export const deleteDebt = async (id: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('debts')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting debt:', error);
+    return false;
+  }
+  return true;
+};
+
+// Update Dashboard Stats
+export const updateDashboardStats = async (patch: Partial<DashboardStats>): Promise<DashboardStats | null> => {
+  const dbPatch: any = {};
+  if (patch.availableCash !== undefined) dbPatch.available_cash = patch.availableCash;
+  if (patch.totalDebt !== undefined) dbPatch.total_debt = patch.totalDebt;
+  if (patch.weekendSpent !== undefined) dbPatch.weekend_spent = patch.weekendSpent;
+  if (patch.weekendCap !== undefined) dbPatch.weekend_cap = patch.weekendCap;
+  if (patch.savingsProgress !== undefined) dbPatch.savings_progress = patch.savingsProgress;
+  if (patch.monthlyIncome !== undefined) dbPatch.monthly_income = patch.monthlyIncome;
+  if (patch.btcTargetMonthly !== undefined) dbPatch.btc_target_monthly = patch.btcTargetMonthly;
+  if (patch.btcTotalContributed !== undefined) dbPatch.btc_total_contributed = patch.btcTotalContributed;
+  if (patch.btcAccumulated !== undefined) dbPatch.btc_accumulated = patch.btcAccumulated;
+
+  const { data, error } = await supabase
+    .from('dashboard_stats')
+    .update(dbPatch)
+    .eq('id', 1) // Assuming single row with id=1
+    .select()
+    .single();
+
+  if (error || !data) {
+    console.error('Error updating dashboard stats:', error);
+    return null;
+  }
+  return {
+    availableCash: Number(data.available_cash),
+    totalDebt: Number(data.total_debt),
+    weekendSpent: Number(data.weekend_spent),
+    weekendCap: Number(data.weekend_cap),
+    savingsProgress: Number(data.savings_progress),
+    monthlyIncome: Number(data.monthly_income),
+    btcTargetMonthly: Number(data.btc_target_monthly),
+    btcTotalContributed: Number(data.btc_total_contributed),
+    btcAccumulated: Number(data.btc_accumulated)
+  };
+};
+
+// Update Budget
+export const updateBudget = async (id: string, patch: Partial<CategoryBudget>): Promise<CategoryBudget | null> => {
+  const dbPatch: any = {};
+  if (patch.category !== undefined) dbPatch.category = patch.category;
+  if (patch.limit !== undefined) dbPatch.limit = patch.limit;
+  if (patch.spent !== undefined) dbPatch.spent = patch.spent;
+
+  const { data, error } = await supabase
+    .from('category_budgets')
+    .update(dbPatch)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error || !data) {
+    console.error('Error updating budget:', error);
+    return null;
+  }
+  return {
+    id: data.id,
+    category: data.category,
+    limit: Number(data.limit),
+    spent: Number(data.spent)
+  };
+};
+
+// Delete Scheduled Payment
+export const deleteScheduledPayment = async (id: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('scheduled_payments')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting scheduled payment:', error);
+    return false;
+  }
+  return true;
+};
