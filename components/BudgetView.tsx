@@ -13,15 +13,15 @@ interface BudgetViewProps {
 const BudgetView: React.FC<BudgetViewProps> = ({ stats, budgets, debts, onEditIncome, onEditWeekendCap }) => {
   const totalSpent = useMemo(() => budgets.reduce((acc, b) => acc + b.spent, 0), [budgets]);
   const totalLimit = useMemo(() => budgets.reduce((acc, b) => acc + b.limit, 0), [budgets]);
-  
+
   const totalDebtPayments = useMemo(() => debts.reduce((acc, d) => acc + d.monthlyMinimum, 0), [debts]);
-  
+
   // Margen mensual restante: ingresos – gastos – pagos mínimos
   const monthlyMargin = stats.monthlyIncome - totalSpent - totalDebtPayments;
   const marginStatus = monthlyMargin > 1000 ? 'healthy' : monthlyMargin >= 0 ? 'tight' : 'deficit';
 
   const budgetUsagePercent = Math.min(100, (totalSpent / totalLimit) * 100);
-  
+
   const weekendStatus = stats.weekendSpent > stats.weekendCap ? 'exceeded' : 'ok';
 
   const alerts = useMemo(() => {
@@ -54,27 +54,25 @@ const BudgetView: React.FC<BudgetViewProps> = ({ stats, budgets, debts, onEditIn
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative group">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Margen mensual restante</p>
           <div className="flex items-center justify-between">
-            <h3 className={`text-2xl font-black ${
-              marginStatus === 'healthy' ? 'text-emerald-600' : 
-              marginStatus === 'tight' ? 'text-amber-600' : 'text-rose-600'
-            }`}>
+            <h3 className={`text-2xl font-black ${marginStatus === 'healthy' ? 'text-emerald-600' :
+                marginStatus === 'tight' ? 'text-amber-600' : 'text-rose-600'
+              }`}>
               S/{monthlyMargin.toLocaleString()}
             </h3>
-            <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${
-              marginStatus === 'healthy' ? 'bg-emerald-100 text-emerald-700' : 
-              marginStatus === 'tight' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'
-            }`}>
+            <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${marginStatus === 'healthy' ? 'bg-emerald-100 text-emerald-700' :
+                marginStatus === 'tight' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'
+              }`}>
               {marginStatus === 'healthy' ? 'Saludable' : marginStatus === 'tight' ? 'Ajustado' : 'Déficit'}
             </span>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-50 flex justify-between items-center">
-             <p className="text-[10px] text-slate-400 font-medium">Basado en ingreso: <span className="text-slate-600 font-bold">S/{stats.monthlyIncome.toLocaleString()}</span></p>
-             <button 
-                onClick={onEditIncome}
-                className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 transition-colors uppercase tracking-tight"
-             >
-                Editar ingreso
-             </button>
+            <p className="text-[10px] text-slate-400 font-medium">Basado en ingreso: <span className="text-slate-600 font-bold">S/{stats.monthlyIncome.toLocaleString()}</span></p>
+            <button
+              onClick={onEditIncome}
+              className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 transition-colors uppercase tracking-tight"
+            >
+              Editar ingreso
+            </button>
           </div>
         </div>
 
@@ -85,10 +83,9 @@ const BudgetView: React.FC<BudgetViewProps> = ({ stats, budgets, debts, onEditIn
             <span className="text-xs text-slate-400 font-medium">S/{totalSpent.toLocaleString()} / S/{totalLimit.toLocaleString()}</span>
           </div>
           <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-            <div 
-              className={`h-full rounded-full transition-all duration-1000 ${
-                budgetUsagePercent > 90 ? 'bg-rose-500' : budgetUsagePercent > 70 ? 'bg-amber-500' : 'bg-indigo-600'
-              }`} 
+            <div
+              className={`h-full rounded-full transition-all duration-1000 ${budgetUsagePercent > 90 ? 'bg-rose-500' : budgetUsagePercent > 70 ? 'bg-amber-500' : 'bg-indigo-600'
+                }`}
               style={{ width: `${budgetUsagePercent}%` }}
             ></div>
           </div>
@@ -143,8 +140,8 @@ const BudgetView: React.FC<BudgetViewProps> = ({ stats, budgets, debts, onEditIn
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-2">
                           <div className="w-12 bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full rounded-full ${status === 'over' ? 'bg-rose-500' : status === 'near' ? 'bg-amber-500' : 'bg-indigo-600'}`} 
+                            <div
+                              className={`h-full rounded-full ${status === 'over' ? 'bg-rose-500' : status === 'near' ? 'bg-amber-500' : 'bg-indigo-600'}`}
                               style={{ width: `${Math.min(100, percent)}%` }}
                             ></div>
                           </div>
@@ -152,11 +149,10 @@ const BudgetView: React.FC<BudgetViewProps> = ({ stats, budgets, debts, onEditIn
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className={`w-2.5 h-2.5 rounded-full ${
-                          status === 'over' ? 'bg-rose-500 shadow-sm shadow-rose-200' : 
-                          status === 'near' ? 'bg-amber-500 shadow-sm shadow-amber-200' : 
-                          'bg-emerald-500 shadow-sm shadow-emerald-200'
-                        }`}></div>
+                        <div className={`w-2.5 h-2.5 rounded-full ${status === 'over' ? 'bg-rose-500 shadow-sm shadow-rose-200' :
+                            status === 'near' ? 'bg-amber-500 shadow-sm shadow-amber-200' :
+                              'bg-emerald-500 shadow-sm shadow-emerald-200'
+                          }`}></div>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <button className="p-1.5 text-slate-300 hover:text-indigo-600 transition-colors">
@@ -180,7 +176,7 @@ const BudgetView: React.FC<BudgetViewProps> = ({ stats, budgets, debts, onEditIn
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-bold text-slate-900">Fines de Semana</h3>
               <div className="flex items-center space-x-2">
-                <button 
+                <button
                   onClick={onEditWeekendCap}
                   className="p-1 text-slate-300 hover:text-indigo-600 transition-colors"
                   aria-label="Editar cap de fin de semana"
@@ -203,8 +199,8 @@ const BudgetView: React.FC<BudgetViewProps> = ({ stats, budgets, debts, onEditIn
               </div>
               <div className="pt-2">
                 <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-1000 ${weekendStatus === 'ok' ? 'bg-indigo-600' : 'bg-rose-500'}`} 
+                  <div
+                    className={`h-full rounded-full transition-all duration-1000 ${weekendStatus === 'ok' ? 'bg-indigo-600' : 'bg-rose-500'}`}
                     style={{ width: `${Math.min(100, (stats.weekendSpent / stats.weekendCap) * 100)}%` }}
                   ></div>
                 </div>

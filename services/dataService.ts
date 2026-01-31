@@ -1,131 +1,303 @@
 
-import { Transaction, TransactionCategory, Debt, DebtPriority, DashboardStats, CategoryBudget, ScheduledPayment, BtcContribution } from '../types';
+import { supabase } from '../src/lib/supabase';
+import { Transaction, TransactionCategory, Debt, DashboardStats, CategoryBudget, ScheduledPayment, BtcContribution } from '../types';
 
-const MOCK_DEBTS: Debt[] = [
-  {
-    id: 'd1',
-    name: 'Scheu Dental (P1)',
-    initialBalance: 15000,
-    currentBalance: 9600,
-    monthlyMinimum: 1500,
-    realPayment: 1500,
-    priority: DebtPriority.P1,
-    dueDate: '2026-04-29',
-  },
-  {
-    id: 'd2',
-    name: 'Interbank (P2)',
-    initialBalance: 12000,
-    currentBalance: 8400,
-    monthlyMinimum: 380,
-    realPayment: 380,
-    priority: DebtPriority.P2,
-    dueDate: '2026-05-15',
-  },
-  {
-    id: 'd3',
-    name: 'Reactiva (P3)',
-    initialBalance: 20000,
-    currentBalance: 15500,
-    monthlyMinimum: 500,
-    realPayment: 500,
-    priority: DebtPriority.P3,
-    dueDate: '2026-05-20',
+// Helper to convert DB snake_case to camelCase if needed,
+// but for now we will try to match the types or map them manually.
+
+export const getDashboardStats = async (): Promise<DashboardStats> => {
+  const { data, error } = await supabase
+    .from('dashboard_stats')
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('Error fetching stats:', error);
+    // Return fallback zero keys
+    return {
+      availableCash: 0,
+      totalDebt: 0,
+      weekendSpent: 0,
+      weekendCap: 0,
+      savingsProgress: 0,
+      monthlyIncome: 0,
+      btcTargetMonthly: 0,
+      btcTotalContributed: 0,
+      btcAccumulated: 0,
+    };
   }
-];
 
-const MOCK_TRANSACTIONS: Transaction[] = [
-  { id: 't1', date: '2026-04-20', description: 'Tambo Weekend', amount: 54, category: TransactionCategory.WEEKEND, isWeekend: true, status: 'categorized' },
-  { id: 't2', date: '2026-04-15', description: 'Interbank Mínimo', amount: 380, category: TransactionCategory.DEBT, isWeekend: false, status: 'categorized' },
-  { id: 't3', date: '2026-04-13', description: 'Uber Trip', amount: 22, category: TransactionCategory.VARIABLE, isWeekend: false, status: 'categorized' },
-  { id: 't4', date: '2026-03-29', description: 'Scheu Dental Payment', amount: 1500, category: TransactionCategory.DEBT, isWeekend: false, status: 'categorized' },
-  { id: 't5', date: '2026-04-22', description: 'Mercado Semanal', amount: 210, category: TransactionCategory.ESSENTIAL, isWeekend: false, status: 'categorized' },
-];
+  return {
+    availableCash: Number(data.available_cash),
+    totalDebt: Number(data.total_debt),
+    weekendSpent: Number(data.weekend_spent),
+    weekendCap: Number(data.weekend_cap),
+    savingsProgress: Number(data.savings_progress),
+    monthlyIncome: Number(data.monthly_income),
+    btcTargetMonthly: Number(data.btc_target_monthly),
+    btcTotalContributed: Number(data.btc_total_contributed),
+    btcAccumulated: Number(data.btc_accumulated),
+  };
+};
 
-const MOCK_BUDGETS: CategoryBudget[] = [
-  { id: 'b1', category: 'Alimentación', limit: 1200, spent: 980 },
-  { id: 'b2', category: 'Transporte', limit: 400, spent: 150 },
-  { id: 'b3', category: 'Servicios', limit: 600, spent: 580 },
-  { id: 'b4', category: 'Ocio', limit: 300, spent: 285 },
-  { id: 'b5', category: 'Otros', limit: 500, spent: 120 },
-];
+export const getDebts = async (): Promise<Debt[]> => {
+  const { data, error } = await supabase
+    .from('debts')
+    .select('*')
+    .order('priority', { ascending: true });
 
-const MOCK_SCHEDULED_PAYMENTS: ScheduledPayment[] = [
-  { id: 'p1', date: '2026-04-29', concept: 'Scheu Dental (P1)', amount: 1500, type: 'mínimo', status: 'pendiente' },
-  { id: 'p2', date: '2026-05-15', concept: 'Interbank (P2)', amount: 380, type: 'mínimo', status: 'pendiente' },
-  { id: 'p3', date: '2026-05-20', concept: 'Reactiva (P3)', amount: 500, type: 'mínimo', status: 'pendiente' },
-  { id: 'p4', date: '2026-04-25', concept: 'Extra Scheu (P1)', amount: 500, type: 'extra', status: 'pendiente' },
-  { id: 'p5', date: '2026-04-10', concept: 'Alquiler', amount: 1200, type: 'mínimo', status: 'pagado' },
-];
+  if (error) {
+    console.error('Error fetching debts:', error);
+    return [];
+  }
 
-const MOCK_BTC_CONTRIBUTIONS: BtcContribution[] = [
-  { id: 'btc1', date: '2026-03-01', amount: 800, btcAmount: 0.0024, notes: 'Aporte mensual Marzo' },
-  { id: 'btc2', date: '2026-02-01', amount: 800, btcAmount: 0.0026, notes: 'Aporte mensual Febrero' },
-  { id: 'btc3', date: '2026-01-01', amount: 1200, btcAmount: 0.0041, notes: 'Bono Enero' },
-];
+  return data.map((d: any) => ({
+    id: d.id,
+    name: d.name,
+    initialBalance: Number(d.initial_balance),
+    currentBalance: Number(d.current_balance),
+    monthlyMinimum: Number(d.monthly_minimum),
+    realPayment: Number(d.real_payment),
+    priority: d.priority,
+    dueDate: d.due_date,
+  }));
+};
 
-let dynamicCategories: string[] = Object.values(TransactionCategory);
-let dynamicPaymentConcepts: string[] = ['Scheu Dental (P1)', 'Interbank (P2)', 'Reactiva (P3)', 'Alquiler', 'Servicios'];
-let currentScheduledPayments = [...MOCK_SCHEDULED_PAYMENTS];
-let currentBtcContributions = [...MOCK_BTC_CONTRIBUTIONS];
+export const getTransactions = async (): Promise<Transaction[]> => {
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('*')
+    .order('date', { ascending: false });
 
-export const getDashboardStats = (): DashboardStats => ({
-  availableCash: 7450,
-  totalDebt: 33500,
-  weekendSpent: 420,
-  weekendCap: 600,
-  savingsProgress: 12,
-  monthlyIncome: 12000,
-  btcTargetMonthly: 800,
-  btcTotalContributed: 10500,
-  btcAccumulated: 0.0452,
-});
+  if (error) {
+    console.error('Error fetching transactions:', error);
+    return [];
+  }
 
-export const getDebts = (): Debt[] => MOCK_DEBTS;
-export const getTransactions = (): Transaction[] => MOCK_TRANSACTIONS;
-export const getBudgets = (): CategoryBudget[] => MOCK_BUDGETS;
-export const getScheduledPayments = (): ScheduledPayment[] => currentScheduledPayments;
-export const getBtcContributions = (): BtcContribution[] => currentBtcContributions;
-export const getCategories = (): string[] => dynamicCategories;
-export const getPaymentConcepts = (): string[] => dynamicPaymentConcepts;
+  return data.map((t: any) => ({
+    id: t.id,
+    date: t.date,
+    description: t.description,
+    amount: Number(t.amount),
+    category: t.category,
+    isWeekend: t.is_weekend,
+    status: t.status,
+  }));
+};
 
-export const addCategory = (name: string): string[] => {
+export const getBudgets = async (): Promise<CategoryBudget[]> => {
+  const { data, error } = await supabase
+    .from('category_budgets')
+    .select('*');
+
+  if (error) {
+    console.error('Error fetching budgets:', error);
+    return [];
+  }
+
+  return data.map((b: any) => ({
+    id: b.id,
+    category: b.category,
+    limit: Number(b.limit),
+    spent: Number(b.spent),
+  }));
+};
+
+export const getScheduledPayments = async (): Promise<ScheduledPayment[]> => {
+  const { data, error } = await supabase
+    .from('scheduled_payments')
+    .select('*')
+    .order('date', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching scheduled payments:', error);
+    return [];
+  }
+
+  return data.map((p: any) => ({
+    id: p.id,
+    date: p.date,
+    concept: p.concept,
+    amount: Number(p.amount),
+    type: p.type,
+    status: p.status,
+    notes: p.notes,
+  }));
+};
+
+export const getBtcContributions = async (): Promise<BtcContribution[]> => {
+  const { data, error } = await supabase
+    .from('btc_contributions')
+    .select('*')
+    .order('date', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching BTC contributions:', error);
+    return [];
+  }
+
+  return data.map((c: any) => ({
+    id: c.id,
+    date: c.date,
+    amount: Number(c.amount),
+    btcAmount: Number(c.btc_amount),
+    notes: c.notes,
+  }));
+};
+
+export const getCategories = async (): Promise<string[]> => {
+  const { data } = await supabase
+    .from('app_config')
+    .select('value')
+    .eq('key', 'transaction_categories')
+    .single();
+
+  if (data) return data.value;
+  // Fallback
+  return Object.values(TransactionCategory);
+};
+
+export const getPaymentConcepts = async (): Promise<string[]> => {
+  const { data } = await supabase
+    .from('app_config')
+    .select('value')
+    .eq('key', 'payment_concepts')
+    .single();
+
+  if (data) return data.value;
+  return [];
+};
+
+// --- Mutations ---
+
+export const addCategory = async (name: string): Promise<string[]> => {
+  const current = await getCategories();
   const normalized = name.trim();
-  if (!dynamicCategories.find(c => c.toLowerCase() === normalized.toLowerCase())) {
-    dynamicCategories = [...dynamicCategories, normalized];
+  if (!current.find(c => c.toLowerCase() === normalized.toLowerCase())) {
+    const updated = [...current, normalized];
+    await supabase.from('app_config').upsert({ key: 'transaction_categories', value: updated });
+    return updated;
   }
-  return dynamicCategories;
+  return current;
 };
 
-export const addPaymentConcept = (name: string): string[] => {
+export const addPaymentConcept = async (name: string): Promise<string[]> => {
+  const current = await getPaymentConcepts();
   const normalized = name.trim();
-  if (normalized.length >= 3 && !dynamicPaymentConcepts.find(c => c.toLowerCase() === normalized.toLowerCase())) {
-    dynamicPaymentConcepts = [...dynamicPaymentConcepts, normalized];
+  if (!current.find(c => c.toLowerCase() === normalized.toLowerCase())) {
+    const updated = [...current, normalized];
+    await supabase.from('app_config').upsert({ key: 'payment_concepts', value: updated });
+    return updated;
   }
-  return dynamicPaymentConcepts;
+  return current;
 };
 
-export const addScheduledPayment = (payment: Omit<ScheduledPayment, 'id'>): ScheduledPayment => {
-  const newPayment = { ...payment, id: Math.random().toString(36).substr(2, 9) };
-  currentScheduledPayments.push(newPayment);
-  return newPayment;
+export const addScheduledPayment = async (payment: Omit<ScheduledPayment, 'id'>): Promise<ScheduledPayment | null> => {
+  const { data, error } = await supabase
+    .from('scheduled_payments')
+    .insert([{
+      date: payment.date,
+      concept: payment.concept,
+      amount: payment.amount,
+      type: payment.type,
+      status: payment.status,
+      notes: payment.notes
+    }])
+    .select()
+    .single();
+
+  if (error || !data) {
+    console.error('Error adding scheduled payment:', error);
+    return null;
+  }
+  return {
+    id: data.id,
+    date: data.date,
+    concept: data.concept,
+    amount: Number(data.amount),
+    type: data.type,
+    status: data.status,
+    notes: data.notes
+  };
 };
 
-export const updateScheduledPayment = (id: string, patch: Partial<ScheduledPayment>): ScheduledPayment | null => {
-  const idx = currentScheduledPayments.findIndex(p => p.id === id);
-  if (idx === -1) return null;
-  currentScheduledPayments[idx] = { ...currentScheduledPayments[idx], ...patch };
-  return currentScheduledPayments[idx];
+export const updateScheduledPayment = async (id: string, patch: Partial<ScheduledPayment>): Promise<ScheduledPayment | null> => {
+  // Map snake_case for DB
+  const dbPatch: any = {};
+  if (patch.amount !== undefined) dbPatch.amount = patch.amount;
+  if (patch.date !== undefined) dbPatch.date = patch.date;
+  if (patch.concept !== undefined) dbPatch.concept = patch.concept;
+  if (patch.status !== undefined) dbPatch.status = patch.status;
+  if (patch.type !== undefined) dbPatch.type = patch.type;
+  if (patch.notes !== undefined) dbPatch.notes = patch.notes;
+
+  const { data, error } = await supabase
+    .from('scheduled_payments')
+    .update(dbPatch)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error || !data) return null;
+  return {
+    id: data.id,
+    date: data.date,
+    concept: data.concept,
+    amount: Number(data.amount),
+    type: data.type,
+    status: data.status,
+    notes: data.notes
+  };
 };
 
-export const deleteScheduledPayment = (id: string): boolean => {
-  const initialLen = currentScheduledPayments.length;
-  currentScheduledPayments = currentScheduledPayments.filter(p => p.id !== id);
-  return currentScheduledPayments.length < initialLen;
+export const addBtcContribution = async (contribution: Omit<BtcContribution, 'id'>): Promise<BtcContribution | null> => {
+  const { data, error } = await supabase
+    .from('btc_contributions')
+    .insert([{
+      date: contribution.date,
+      amount: contribution.amount,
+      btc_amount: contribution.btcAmount,
+      notes: contribution.notes
+    }])
+    .select()
+    .single();
+
+  if (error || !data) return null;
+  return {
+    id: data.id,
+    date: data.date,
+    amount: Number(data.amount),
+    btcAmount: Number(data.btc_amount),
+    notes: data.notes
+  };
 };
 
-export const addBtcContribution = (contribution: Omit<BtcContribution, 'id'>): BtcContribution => {
-  const newContribution = { ...contribution, id: Math.random().toString(36).substr(2, 9) };
-  currentBtcContributions = [newContribution, ...currentBtcContributions];
-  return newContribution;
+// Add Transaction (missing in original service but used in App)
+export const addTransaction = async (tx: Omit<Transaction, 'id' | 'status'>): Promise<Transaction | null> => {
+  const { data, error } = await supabase
+    .from('transactions')
+    .insert([{
+      date: tx.date,
+      description: tx.description,
+      amount: tx.amount,
+      category: tx.category,
+      is_weekend: tx.isWeekend,
+      status: 'categorized'
+    }])
+    .select()
+    .single();
+
+  if (error || !data) {
+    console.error('Error adding transaction', error);
+    return null;
+  }
+  return {
+    id: data.id,
+    date: data.date,
+    description: data.description,
+    amount: Number(data.amount),
+    category: data.category,
+    isWeekend: data.is_weekend,
+    status: data.status
+  };
 };

@@ -13,7 +13,7 @@ const DEFAULT_YEAR = 2026;
 const CalendarView: React.FC<CalendarViewProps> = ({ payments, onAddPayment, onEditPayment }) => {
   const [currentDate, setCurrentDate] = useState(new Date(DEFAULT_YEAR, 3, 1)); // Default to April 2026
   const [selectedDate, setSelectedDate] = useState<string>(new Date(DEFAULT_YEAR, 3, 1).toISOString().split('T')[0]);
-  
+
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
 
@@ -40,7 +40,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ payments, onAddPayment, onE
   const calendarDays = useMemo(() => {
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
     const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
-    
+
     const days = [];
     // Padding for empty start of month
     const startPadding = firstDayOfMonth.getDay();
@@ -80,7 +80,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ payments, onAddPayment, onE
           <h2 className="text-3xl font-bold text-slate-900">Pagos y Calendario</h2>
           <p className="text-slate-500 mt-1">Visualiza próximos pagos críticos y tu calendario financiero.</p>
         </div>
-        <button 
+        <button
           onClick={onAddPayment}
           className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center space-x-2 hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-95"
         >
@@ -127,7 +127,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ payments, onAddPayment, onE
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <button 
+                          <button
                             onClick={() => onEditPayment(p)}
                             className="p-1.5 text-slate-300 hover:text-indigo-600 transition-colors"
                             aria-label="Editar pago programado"
@@ -166,7 +166,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ payments, onAddPayment, onE
                         <p className="font-black text-indigo-400 text-lg">S/{p.amount.toLocaleString()}</p>
                         <p className="text-[10px] font-bold uppercase text-slate-500">{p.status}</p>
                       </div>
-                      <button 
+                      <button
                         onClick={() => onEditPayment(p)}
                         className="p-2 text-white/20 group-hover:text-white/60 hover:text-white transition-colors"
                       >
@@ -209,14 +209,13 @@ const CalendarView: React.FC<CalendarViewProps> = ({ payments, onAddPayment, onE
                 const hasPayments = payments.some(p => p.date === day);
                 const isSelected = selectedDate === day;
                 const dateNum = new Date(day + 'T00:00:00').getDate();
-                
+
                 return (
                   <button
                     key={i}
                     onClick={() => setSelectedDate(day)}
-                    className={`h-9 rounded-lg text-xs font-semibold relative transition-all ${
-                      isSelected ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'hover:bg-slate-50 text-slate-700'
-                    }`}
+                    className={`h-9 rounded-lg text-xs font-semibold relative transition-all ${isSelected ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'hover:bg-slate-50 text-slate-700'
+                      }`}
                   >
                     {dateNum}
                     {hasPayments && !isSelected && (
@@ -248,7 +247,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ payments, onAddPayment, onE
                   </label>
                 </div>
               </div>
-              
+
               <div className="pt-6 border-t border-slate-100">
                 <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-3">Mensual (Cierre)</p>
                 <div className="space-y-3">

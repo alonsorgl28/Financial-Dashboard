@@ -12,22 +12,22 @@ interface InvestmentsViewProps {
 }
 
 const InvestmentsView: React.FC<InvestmentsViewProps> = ({ stats, contributions, payments, debts, onAddContribution }) => {
-  
+
   // Logic SOP: Habilitado si (availableCash >= 0 && todos los pagos 'mínimos' del mes están 'pagado')
   const monthlyMinPayments = payments.filter(p => p.type === 'mínimo');
   const allMinsPaid = monthlyMinPayments.every(p => p.status === 'pagado');
   const noDeficit = stats.availableCash >= 0;
   // Simplificación "Verde": Al menos una de las deudas principales ha bajado su saldo en este periodo (simulado)
-  const debtsInGreen = true; 
+  const debtsInGreen = true;
 
   const isPermitted = noDeficit && allMinsPaid && debtsInGreen;
 
   const btcStatus = isPermitted ? 'Permitido' : 'No permitido';
-  const btcReason = !noDeficit 
-    ? 'Déficit mensual detectado. Cubre el saldo negativo primero.' 
-    : !allMinsPaid 
-    ? 'Hay pagos mínimos pendientes para este mes.' 
-    : 'Habilitado por cumplimiento de regla SOP.';
+  const btcReason = !noDeficit
+    ? 'Déficit mensual detectado. Cubre el saldo negativo primero.'
+    : !allMinsPaid
+      ? 'Hay pagos mínimos pendientes para este mes.'
+      : 'Habilitado por cumplimiento de regla SOP.';
 
   const chartData = useMemo(() => {
     // Group last 6 contributions for chart
@@ -45,14 +45,13 @@ const InvestmentsView: React.FC<InvestmentsViewProps> = ({ stats, contributions,
           <p className="text-slate-500 mt-1">Monitorea tu BTC y la regla de habilitación (solo si deudas del mes están en verde).</p>
         </div>
         <div className="group relative">
-          <button 
+          <button
             disabled={!isPermitted}
             onClick={onAddContribution}
-            className={`px-5 py-2.5 rounded-xl font-semibold flex items-center space-x-2 transition-all active:scale-95 shadow-lg ${
-              isPermitted 
-                ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100' 
+            className={`px-5 py-2.5 rounded-xl font-semibold flex items-center space-x-2 transition-all active:scale-95 shadow-lg ${isPermitted
+                ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100'
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-            }`}
+              }`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4.5v15m7.5-7.5h-15" />
@@ -70,9 +69,8 @@ const InvestmentsView: React.FC<InvestmentsViewProps> = ({ stats, contributions,
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
           {/* Estado BTC del mes */}
-          <div className={`p-8 rounded-[2.5rem] border-2 flex items-center justify-between overflow-hidden relative ${
-            isPermitted ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'
-          }`}>
+          <div className={`p-8 rounded-[2.5rem] border-2 flex items-center justify-between overflow-hidden relative ${isPermitted ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'
+            }`}>
             <div className="relative z-10">
               <p className={`text-xs font-black uppercase tracking-widest mb-1 ${isPermitted ? 'text-emerald-600' : 'text-rose-600'}`}>
                 Estado BTC del mes
@@ -119,10 +117,10 @@ const InvestmentsView: React.FC<InvestmentsViewProps> = ({ stats, contributions,
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                  <Tooltip 
-                    cursor={{fill: '#f8fafc'}}
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <Tooltip
+                    cursor={{ fill: '#f8fafc' }}
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                   />
                   <Bar dataKey="monto" fill="#4f46e5" radius={[4, 4, 0, 0]} barSize={40} />
@@ -208,7 +206,7 @@ const InvestmentsView: React.FC<InvestmentsViewProps> = ({ stats, contributions,
             </div>
             <div className="mt-12 pt-8 border-t border-white/5">
               <div className="flex items-center space-x-3 p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20">
-                <svg className="w-5 h-5 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M23.638 14.904c-1.602 6.43-8.113 10.34-14.542 8.736C2.67 22.038-1.24 15.527.362 9.095 1.962 2.664 8.474-1.247 14.903.355c6.428 1.602 10.339 8.113 8.735 14.549zM18.106 9.87c.307-2.053-1.258-3.156-3.398-3.89l.695-2.787-1.696-.423-.676 2.713c-.446-.111-.904-.216-1.36-.319l.68-2.727-1.697-.423-.695 2.787c-.37-.084-.73-.167-1.077-.255l.001-.005-2.34-.584-.45 1.81s1.26.288 1.233.307c.687.172.812.628.791.99l-.793 3.18c.047.012.109.028.177.054l-.179-.044-1.11 4.453c-.084.208-.297.52-.776.4l-1.233-.307-.708 1.63 2.208.55c.41.103.813.209 1.21.31l-.704 2.825 1.696.423.696-2.79c.463.126.913.243 1.353.354l-.692 2.775 1.697.423.704-2.825c2.893.548 5.07.327 5.986-2.29.74-2.108-.036-3.324-1.562-4.116.66-.153 1.157-.59 1.442-1.485zm-2.585 5.405c-.524 2.105-4.07.967-5.22.68l.93-3.73c1.15.287 4.84.856 4.29 3.05zm.526-5.443c-.477 1.914-3.43.942-4.387.703l.844-3.385c.957.239 4.043.687 3.543 2.682z"/></svg>
+                <svg className="w-5 h-5 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M23.638 14.904c-1.602 6.43-8.113 10.34-14.542 8.736C2.67 22.038-1.24 15.527.362 9.095 1.962 2.664 8.474-1.247 14.903.355c6.428 1.602 10.339 8.113 8.735 14.549zM18.106 9.87c.307-2.053-1.258-3.156-3.398-3.89l.695-2.787-1.696-.423-.676 2.713c-.446-.111-.904-.216-1.36-.319l.68-2.727-1.697-.423-.695 2.787c-.37-.084-.73-.167-1.077-.255l.001-.005-2.34-.584-.45 1.81s1.26.288 1.233.307c.687.172.812.628.791.99l-.793 3.18c.047.012.109.028.177.054l-.179-.044-1.11 4.453c-.084.208-.297.52-.776.4l-1.233-.307-.708 1.63 2.208.55c.41.103.813.209 1.21.31l-.704 2.825 1.696.423.696-2.79c.463.126.913.243 1.353.354l-.692 2.775 1.697.423.704-2.825c2.893.548 5.07.327 5.986-2.29.74-2.108-.036-3.324-1.562-4.116.66-.153 1.157-.59 1.442-1.485zm-2.585 5.405c-.524 2.105-4.07.967-5.22.68l.93-3.73c1.15.287 4.84.856 4.29 3.05zm.526-5.443c-.477 1.914-3.43.942-4.387.703l.844-3.385c.957.239 4.043.687 3.543 2.682z" /></svg>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-200">HODL Portal Activo</span>
               </div>
             </div>

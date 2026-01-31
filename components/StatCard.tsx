@@ -21,7 +21,7 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, subValue, trend, icon
         <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">{label}</span>
         <div className="flex items-center space-x-2">
           {onAction && (
-            <button 
+            <button
               onClick={onAction}
               className="p-1.5 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
               aria-label={`Editar ${label}`}
