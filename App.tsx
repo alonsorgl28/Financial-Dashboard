@@ -37,6 +37,7 @@ import {
   deleteDebt,
   updateDashboardStats,
   updateBudget,
+  addBudget,
   deleteScheduledPayment
 } from './services/dataService';
 import { Transaction, TransactionCategory, Debt, CategoryBudget, ScheduledPayment, BtcContribution, DashboardStats } from './types';
@@ -177,6 +178,41 @@ const App: React.FC = () => {
     }
   }, [debts]);
 
+  // AUTOMATIC BALANCE CALCULATION logic
+  // "Available Cash" = "Monthly Income" - "Sum of all expenses in current month"
+  useEffect(() => {
+    // 1. Get current month/year
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // 2. Filter and sum transactions for this specific month
+    const currentMonthExpenses = transactions.reduce((sum, tx) => {
+      // Parse 'YYYY-MM-DD' safely (assuming local/UTC standard from input)
+      // Splitting manually avoids timezone issues often found with new Date(string)
+      const [y, m, d] = tx.date.split('-').map(Number);
+
+      // Note: 'm' is 1-indexed in date string (01..12), but getMonth() is 0-indexed (0..11)
+      if (y === currentYear && (m - 1) === currentMonth) {
+        // Exclude 'Income' category if you track income as transactions, 
+        // but assuming these are all expenses based on your app usage.
+        return sum + tx.amount;
+      }
+      return sum;
+    }, 0);
+
+    // 3. Calculate strictly derived balance
+    const derivedAvailableCash = stats.monthlyIncome - currentMonthExpenses;
+
+    // 4. Update state only if changed to avoid loops
+    if (stats.availableCash !== derivedAvailableCash) {
+      setStats(prev => ({
+        ...prev,
+        availableCash: derivedAvailableCash
+      }));
+    }
+  }, [transactions, stats.monthlyIncome, stats.availableCash]);
+
   const handleOpenCreate = () => {
     setEditingTransaction(null);
     setIsModalOpen(true);
@@ -267,6 +303,23 @@ const App: React.FC = () => {
         ...(prev || { id: '', date: '', description: '', amount: 0, isWeekend: false, status: 'categorized' }),
         category: name
       }));
+    }
+  };
+
+  const handleSaveBudget = async (category: string, limit: number) => {
+    const existing = budgets.find(b => b.category === category);
+    if (existing) {
+      const updated = await updateBudget(existing.id, { limit });
+      if (updated) {
+        setBudgets(prev => prev.map(b => b.id === updated.id ? updated : b));
+        setToast({ message: 'Límite actualizado', type: 'success' });
+      }
+    } else {
+      const created = await addBudget({ category, limit });
+      if (created) {
+        setBudgets(prev => [...prev, created]);
+        setToast({ message: 'Presupuesto creado con éxito', type: 'success' });
+      }
     }
   };
 
@@ -705,8 +758,11 @@ const App: React.FC = () => {
           stats={stats}
           budgets={budgets}
           debts={debts}
+          categories={categories}
+          transactions={transactions}
           onEditIncome={() => setIsEditIncomeModalOpen(true)}
           onEditWeekendCap={() => setIsEditWeekendCapModalOpen(true)}
+          onSaveBudget={handleSaveBudget}
         />
       )}
       {activeTab === 'calendario' && (

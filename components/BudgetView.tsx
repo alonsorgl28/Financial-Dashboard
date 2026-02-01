@@ -1,44 +1,109 @@
 
-import React, { useMemo } from 'react';
-import { CategoryBudget, DashboardStats, Debt } from '../types';
+import React, { useMemo, useState } from 'react';
+import { CategoryBudget, DashboardStats, Debt, Transaction } from '../types';
 
 interface BudgetViewProps {
   stats: DashboardStats;
   budgets: CategoryBudget[];
   debts: Debt[];
+  categories: string[];
+  transactions: Transaction[];
   onEditIncome: () => void;
   onEditWeekendCap: () => void;
+  onSaveBudget: (category: string, limit: number) => void;
 }
 
-const BudgetView: React.FC<BudgetViewProps> = ({ stats, budgets, debts, onEditIncome, onEditWeekendCap }) => {
-  const totalSpent = useMemo(() => budgets.reduce((acc, b) => acc + b.spent, 0), [budgets]);
-  const totalLimit = useMemo(() => budgets.reduce((acc, b) => acc + b.limit, 0), [budgets]);
+const BudgetView: React.FC<BudgetViewProps> = ({ stats, budgets, debts, categories, transactions, onEditIncome, onEditWeekendCap, onSaveBudget }) => {
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [editAmount, setEditAmount] = useState<string>('');
+
+  // 1. Calculate REAL spent per category from transactions (Current Month)
+  const categorySpending = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // Map: Category -> Amount
+    const spendingMap: Record<string, number> = {};
+
+    transactions.forEach(tx => {
+      const [y, m] = tx.date.split('-').map(Number);
+      // 'm' is 1-indexed from string date, getMonth() is 0-indexed
+      if (y === currentYear && (m - 1) === currentMonth) {
+        spendingMap[tx.category] = (spendingMap[tx.category] || 0) + tx.amount;
+      }
+    });
+    return spendingMap;
+  }, [transactions]);
+
+  // 2. Merge budgets with categories and INJECT calculated spending
+  const finalBudgets = useMemo(() => {
+    return categories.map(cat => {
+      const existing = budgets.find(b => b.category === cat);
+      const realSpent = categorySpending[cat] || 0;
+
+      if (existing) {
+        return { ...existing, spent: realSpent };
+      }
+
+      // Virtual budget for missing category
+      return {
+        id: `virtual-${cat}`,
+        category: cat,
+        limit: 0,
+        spent: realSpent
+      } as CategoryBudget;
+    }).sort((a, b) => b.spent - a.spent);
+  }, [categories, budgets, categorySpending]);
+
+  const totalSpent = useMemo(() => finalBudgets.reduce((acc, b) => acc + b.spent, 0), [finalBudgets]);
+  const totalLimit = useMemo(() => finalBudgets.reduce((acc, b) => acc + b.limit, 0), [finalBudgets]);
 
   const totalDebtPayments = useMemo(() => debts.reduce((acc, d) => acc + d.monthlyMinimum, 0), [debts]);
 
-  // Margen mensual restante: ingresos – gastos – pagos mínimos
+  // Margen mensual restante logic
   const monthlyMargin = stats.monthlyIncome - totalSpent - totalDebtPayments;
   const marginStatus = monthlyMargin > 1000 ? 'healthy' : monthlyMargin >= 0 ? 'tight' : 'deficit';
 
-  const budgetUsagePercent = Math.min(100, (totalSpent / totalLimit) * 100);
+  const budgetUsagePercent = totalLimit > 0 ? Math.min(100, (totalSpent / totalLimit) * 100) : 0;
 
   const weekendStatus = stats.weekendSpent > stats.weekendCap ? 'exceeded' : 'ok';
 
+  // Update weekend spent based on transactions too for consistency? 
+  // currently passing stats.weekendSpent which comes from App.tsx (which is dynamically calculated correctly now).
+
   const alerts = useMemo(() => {
     const list = [];
-    if (stats.weekendSpent / stats.weekendCap >= 0.9) {
+    if (stats.weekendCap > 0 && stats.weekendSpent / stats.weekendCap >= 0.9) {
       list.push(`Fin de semana al ${Math.round((stats.weekendSpent / stats.weekendCap) * 100)}% del cap`);
     }
-    budgets.forEach(b => {
-      const p = (b.spent / b.limit) * 100;
-      if (p >= 80) {
-        list.push(`${b.category} alcanzó el ${Math.round(p)}% del límite`);
+    finalBudgets.forEach(b => {
+      if (b.limit > 0) {
+        const p = (b.spent / b.limit) * 100;
+        if (p >= 80) {
+          list.push(`${b.category} alcanzó el ${Math.round(p)}% del límite`);
+        }
       }
     });
     if (marginStatus === 'tight') list.push('Margen mensual en zona amarilla');
     if (marginStatus === 'deficit') list.push('ALERTA: Déficit proyectado detectado');
     return list;
-  }, [stats, budgets, marginStatus]);
+  }, [stats, weekendStatus, finalBudgets, marginStatus]);
+
+  const startEditing = (b: CategoryBudget) => {
+    setEditingCategory(b.category);
+    setEditAmount(b.limit.toString());
+  };
+
+  const saveEdit = () => {
+    if (editingCategory) {
+      const amount = parseFloat(editAmount);
+      if (!isNaN(amount)) {
+        onSaveBudget(editingCategory, amount);
+      }
+      setEditingCategory(null);
+    }
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
@@ -55,12 +120,12 @@ const BudgetView: React.FC<BudgetViewProps> = ({ stats, budgets, debts, onEditIn
           <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Margen mensual restante</p>
           <div className="flex items-center justify-between">
             <h3 className={`text-2xl font-black ${marginStatus === 'healthy' ? 'text-emerald-600' :
-                marginStatus === 'tight' ? 'text-amber-600' : 'text-rose-600'
+              marginStatus === 'tight' ? 'text-amber-600' : 'text-rose-600'
               }`}>
-              S/{monthlyMargin.toLocaleString()}
+              S/{monthlyMargin.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </h3>
             <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${marginStatus === 'healthy' ? 'bg-emerald-100 text-emerald-700' :
-                marginStatus === 'tight' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'
+              marginStatus === 'tight' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'
               }`}>
               {marginStatus === 'healthy' ? 'Saludable' : marginStatus === 'tight' ? 'Ajustado' : 'Déficit'}
             </span>
@@ -129,13 +194,37 @@ const BudgetView: React.FC<BudgetViewProps> = ({ stats, budgets, debts, onEditIn
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {budgets.map((b) => {
-                  const percent = (b.spent / b.limit) * 100;
+                {finalBudgets.map((b) => {
+                  const percent = b.limit > 0 ? (b.spent / b.limit) * 100 : 0;
                   const status = percent >= 100 ? 'over' : percent >= 80 ? 'near' : 'ok';
+                  const isEditing = editingCategory === b.category;
+                  const isZeroLimit = b.limit === 0;
+
                   return (
-                    <tr key={b.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-6 py-4 text-sm font-semibold text-slate-900">{b.category}</td>
-                      <td className="px-6 py-4 text-sm text-slate-600 font-medium">S/{b.limit.toLocaleString()}</td>
+                    <tr key={b.category} className={`hover:bg-slate-50/50 transition-colors group ${isZeroLimit ? 'bg-slate-50/30' : ''}`}>
+                      <td className="px-6 py-4 text-sm font-semibold text-slate-900">
+                        {b.category}
+                        {isZeroLimit && <span className="ml-2 text-[10px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-bold uppercase">Sin límite</span>}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                        {isEditing ? (
+                          <div className="flex items-center space-x-2">
+                            <span className="text-slate-400">S/</span>
+                            <input
+                              type="number"
+                              className="w-20 px-2 py-1 border border-indigo-500 rounded text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                              value={editAmount}
+                              onChange={(e) => setEditAmount(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
+                              autoFocus
+                            />
+                          </div>
+                        ) : (
+                          <span onClick={() => startEditing(b)} className="cursor-pointer hover:text-indigo-600 hover:underline decoration-dashed decoration-slate-300 underline-offset-4">
+                            S/{b.limit.toLocaleString()}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 text-sm text-slate-900 font-bold">S/{b.spent.toLocaleString()}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-2">
@@ -150,16 +239,22 @@ const BudgetView: React.FC<BudgetViewProps> = ({ stats, budgets, debts, onEditIn
                       </td>
                       <td className="px-6 py-4">
                         <div className={`w-2.5 h-2.5 rounded-full ${status === 'over' ? 'bg-rose-500 shadow-sm shadow-rose-200' :
-                            status === 'near' ? 'bg-amber-500 shadow-sm shadow-amber-200' :
-                              'bg-emerald-500 shadow-sm shadow-emerald-200'
+                          status === 'near' ? 'bg-amber-500 shadow-sm shadow-amber-200' :
+                            'bg-emerald-500 shadow-sm shadow-emerald-200'
                           }`}></div>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button className="p-1.5 text-slate-300 hover:text-indigo-600 transition-colors">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                          </svg>
-                        </button>
+                        {isEditing ? (
+                          <button onClick={saveEdit} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors font-bold text-xs uppercase">
+                            Guardar
+                          </button>
+                        ) : (
+                          <button onClick={() => startEditing(b)} className="p-1.5 text-slate-300 hover:text-indigo-600 transition-colors">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );

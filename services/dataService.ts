@@ -491,6 +491,30 @@ export const updateBudget = async (id: string, patch: Partial<CategoryBudget>): 
   };
 };
 
+// Add Budget (for new categories)
+export const addBudget = async (budget: Omit<CategoryBudget, 'id' | 'spent'>): Promise<CategoryBudget | null> => {
+  const { data, error } = await supabase
+    .from('category_budgets')
+    .insert([{
+      category: budget.category,
+      limit: budget.limit,
+      spent: 0
+    }])
+    .select()
+    .single();
+
+  if (error || !data) {
+    console.error('Error adding budget:', error);
+    return null;
+  }
+  return {
+    id: data.id,
+    category: data.category,
+    limit: Number(data.limit),
+    spent: Number(data.spent)
+  };
+};
+
 // Delete Scheduled Payment
 export const deleteScheduledPayment = async (id: string): Promise<boolean> => {
   const { error } = await supabase
