@@ -179,17 +179,25 @@ const App: React.FC = () => {
   }, [debts]);
 
   // AUTOMATIC BALANCE CALCULATION logic
-  // "Available Cash" = "Monthly Income" - "Sum of ALL transactions"
-  // (Simplified to match user expectation: what you see in list subtracts from wallet)
+  // "Available Cash" = "Monthly Income" - "Sum of CURRENT MONTH expenses"
   useEffect(() => {
-    // Sum ALL transactions regardless of date
-    const totalExpenses = transactions.reduce((sum, tx) => {
-      // Exclude 'Income' type if it exists, otherwise assume all are expenses
-      return sum + tx.amount;
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // Sum ONLY transactions from the current month
+    const currentMonthExpenses = transactions.reduce((sum, tx) => {
+      const [y, m] = tx.date.split('-').map(Number);
+      // Note: m is 1-based from split, currentMonth is 0-based
+      if (y === currentYear && (m - 1) === currentMonth) {
+        // Exclude 'Income' type if exists
+        return tx.category === 'Ingreso' ? sum : sum + tx.amount;
+      }
+      return sum;
     }, 0);
 
     // Calculate strictly derived balance
-    const derivedAvailableCash = stats.monthlyIncome - totalExpenses;
+    const derivedAvailableCash = stats.monthlyIncome - currentMonthExpenses;
 
     // Update state only if changed to avoid loops
     if (stats.availableCash !== derivedAvailableCash) {
@@ -501,7 +509,7 @@ const App: React.FC = () => {
           <div className="lg:col-span-2 space-y-8">
             {/* Charts Row */}
             <div className="mb-8">
-              <CashFlowChart transactions={transactions} />
+              <CashFlowChart transactions={transactions} monthlyIncome={stats.monthlyIncome} />
             </div>
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center">

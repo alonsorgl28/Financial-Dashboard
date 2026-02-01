@@ -12,11 +12,12 @@ interface Transaction {
 
 interface CashFlowChartProps {
   transactions: Transaction[];
+  monthlyIncome: number;
 }
 
 const MONTH_NAMES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
-const CashFlowChart: React.FC<CashFlowChartProps> = ({ transactions }) => {
+const CashFlowChart: React.FC<CashFlowChartProps> = ({ transactions, monthlyIncome }) => {
   const [timeRange, setTimeRange] = useState<'6months' | '2026'>('2026');
 
   const chartData = useMemo(() => {
@@ -76,8 +77,15 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ transactions }) => {
 
     console.log('--- Aggregated Data ---', monthlyData);
 
-    // 3. Convert to Array and Sort
+    // 3. Apply Default Income Logic & Sort
     let result = Object.values(monthlyData).sort((a, b) => a.monthIndex - b.monthIndex);
+
+    // Hybrid Logic: If income is 0, use default monthlyIncome
+    result = result.map(item => ({
+      ...item,
+      income: item.income === 0 ? monthlyIncome : item.income
+    }));
+
 
     // 4. Filter based on selected range
     const currentMonthIndex = new Date().getMonth();
