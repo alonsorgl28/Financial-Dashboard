@@ -179,32 +179,19 @@ const App: React.FC = () => {
   }, [debts]);
 
   // AUTOMATIC BALANCE CALCULATION logic
-  // "Available Cash" = "Monthly Income" - "Sum of all expenses in current month"
+  // "Available Cash" = "Monthly Income" - "Sum of ALL transactions"
+  // (Simplified to match user expectation: what you see in list subtracts from wallet)
   useEffect(() => {
-    // 1. Get current month/year
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
-    // 2. Filter and sum transactions for this specific month
-    const currentMonthExpenses = transactions.reduce((sum, tx) => {
-      // Parse 'YYYY-MM-DD' safely (assuming local/UTC standard from input)
-      // Splitting manually avoids timezone issues often found with new Date(string)
-      const [y, m, d] = tx.date.split('-').map(Number);
-
-      // Note: 'm' is 1-indexed in date string (01..12), but getMonth() is 0-indexed (0..11)
-      if (y === currentYear && (m - 1) === currentMonth) {
-        // Exclude 'Income' category if you track income as transactions, 
-        // but assuming these are all expenses based on your app usage.
-        return sum + tx.amount;
-      }
-      return sum;
+    // Sum ALL transactions regardless of date
+    const totalExpenses = transactions.reduce((sum, tx) => {
+      // Exclude 'Income' type if it exists, otherwise assume all are expenses
+      return sum + tx.amount;
     }, 0);
 
-    // 3. Calculate strictly derived balance
-    const derivedAvailableCash = stats.monthlyIncome - currentMonthExpenses;
+    // Calculate strictly derived balance
+    const derivedAvailableCash = stats.monthlyIncome - totalExpenses;
 
-    // 4. Update state only if changed to avoid loops
+    // Update state only if changed to avoid loops
     if (stats.availableCash !== derivedAvailableCash) {
       setStats(prev => ({
         ...prev,
