@@ -177,90 +177,92 @@ const BudgetView: React.FC<BudgetViewProps> = ({ stats, budgets, debts, categori
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Tabla de Presupuesto */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 min-w-0">
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center">
               <h3 className="font-bold text-slate-900">Desglose por Categoría</h3>
             </div>
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-slate-50 text-slate-500 text-[10px] font-bold uppercase tracking-widest">
-                <tr>
-                  <th className="px-6 py-4">Categoría</th>
-                  <th className="px-6 py-4">Límite Mensual</th>
-                  <th className="px-6 py-4">Gastado</th>
-                  <th className="px-6 py-4">%</th>
-                  <th className="px-6 py-4">Estado</th>
-                  <th className="px-6 py-4 text-right"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {finalBudgets.map((b) => {
-                  const percent = b.limit > 0 ? (b.spent / b.limit) * 100 : 0;
-                  const status = percent >= 100 ? 'over' : percent >= 80 ? 'near' : 'ok';
-                  const isEditing = editingCategory === b.category;
-                  const isZeroLimit = b.limit === 0;
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[600px]">
+                <thead className="bg-slate-50 text-slate-500 text-[10px] font-bold uppercase tracking-widest">
+                  <tr>
+                    <th className="px-6 py-4">Categoría</th>
+                    <th className="px-6 py-4">Límite Mensual</th>
+                    <th className="px-6 py-4">Gastado</th>
+                    <th className="px-6 py-4">%</th>
+                    <th className="px-6 py-4">Estado</th>
+                    <th className="px-6 py-4 text-right"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {finalBudgets.map((b) => {
+                    const percent = b.limit > 0 ? (b.spent / b.limit) * 100 : 0;
+                    const status = percent >= 100 ? 'over' : percent >= 80 ? 'near' : 'ok';
+                    const isEditing = editingCategory === b.category;
+                    const isZeroLimit = b.limit === 0;
 
-                  return (
-                    <tr key={b.category} className={`hover:bg-slate-50/50 transition-colors group ${isZeroLimit ? 'bg-slate-50/30' : ''}`}>
-                      <td className="px-6 py-4 text-sm font-semibold text-slate-900">
-                        {b.category}
-                        {isZeroLimit && <span className="ml-2 text-[10px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-bold uppercase">Sin límite</span>}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 font-medium">
-                        {isEditing ? (
+                    return (
+                      <tr key={b.category} className={`hover:bg-slate-50/50 transition-colors group ${isZeroLimit ? 'bg-slate-50/30' : ''}`}>
+                        <td className="px-6 py-4 text-sm font-semibold text-slate-900">
+                          {b.category}
+                          {isZeroLimit && <span className="ml-2 text-[10px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-bold uppercase">Sin límite</span>}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                          {isEditing ? (
+                            <div className="flex items-center space-x-2">
+                              <span className="text-slate-400">S/</span>
+                              <input
+                                type="number"
+                                className="w-20 px-2 py-1 border border-indigo-500 rounded text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                                value={editAmount}
+                                onChange={(e) => setEditAmount(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
+                                autoFocus
+                              />
+                            </div>
+                          ) : (
+                            <span onClick={() => startEditing(b)} className="cursor-pointer hover:text-indigo-600 hover:underline decoration-dashed decoration-slate-300 underline-offset-4">
+                              S/{b.limit.toLocaleString()}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-900 font-bold">S/{b.spent.toLocaleString()}</td>
+                        <td className="px-6 py-4">
                           <div className="flex items-center space-x-2">
-                            <span className="text-slate-400">S/</span>
-                            <input
-                              type="number"
-                              className="w-20 px-2 py-1 border border-indigo-500 rounded text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-100"
-                              value={editAmount}
-                              onChange={(e) => setEditAmount(e.target.value)}
-                              onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
-                              autoFocus
-                            />
+                            <div className="w-12 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${status === 'over' ? 'bg-rose-500' : status === 'near' ? 'bg-amber-500' : 'bg-indigo-600'}`}
+                                style={{ width: `${Math.min(100, percent)}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-500">{Math.round(percent)}%</span>
                           </div>
-                        ) : (
-                          <span onClick={() => startEditing(b)} className="cursor-pointer hover:text-indigo-600 hover:underline decoration-dashed decoration-slate-300 underline-offset-4">
-                            S/{b.limit.toLocaleString()}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-900 font-bold">S/{b.spent.toLocaleString()}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-12 bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${status === 'over' ? 'bg-rose-500' : status === 'near' ? 'bg-amber-500' : 'bg-indigo-600'}`}
-                              style={{ width: `${Math.min(100, percent)}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-[10px] font-bold text-slate-500">{Math.round(percent)}%</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className={`w-2.5 h-2.5 rounded-full ${status === 'over' ? 'bg-rose-500 shadow-sm shadow-rose-200' :
-                          status === 'near' ? 'bg-amber-500 shadow-sm shadow-amber-200' :
-                            'bg-emerald-500 shadow-sm shadow-emerald-200'
-                          }`}></div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        {isEditing ? (
-                          <button onClick={saveEdit} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors font-bold text-xs uppercase">
-                            Guardar
-                          </button>
-                        ) : (
-                          <button onClick={() => startEditing(b)} className="p-1.5 text-slate-300 hover:text-indigo-600 transition-colors">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                            </svg>
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className={`w-2.5 h-2.5 rounded-full ${status === 'over' ? 'bg-rose-500 shadow-sm shadow-rose-200' :
+                            status === 'near' ? 'bg-amber-500 shadow-sm shadow-amber-200' :
+                              'bg-emerald-500 shadow-sm shadow-emerald-200'
+                            }`}></div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {isEditing ? (
+                            <button onClick={saveEdit} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors font-bold text-xs uppercase">
+                              Guardar
+                            </button>
+                          ) : (
+                            <button onClick={() => startEditing(b)} className="p-1.5 text-slate-300 hover:text-indigo-600 transition-colors">
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                              </svg>
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
