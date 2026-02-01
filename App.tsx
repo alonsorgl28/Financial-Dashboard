@@ -500,15 +500,8 @@ const App: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             {/* Charts Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div className="mb-8">
               <CashFlowChart transactions={transactions} />
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-[400px]">
-                <h3 className="text-lg font-bold text-slate-900 mb-6">Distribución de Gastos</h3>
-                {/* Placeholder logic for pie chart can remain or be updated later */}
-                <div className="flex items-center justify-center h-[300px] text-slate-400">
-                  Próximamente: Gráfico de Dona
-                </div>
-              </div>
             </div>
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center">
